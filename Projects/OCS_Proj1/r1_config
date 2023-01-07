@@ -1,0 +1,73 @@
+##### Failover setup#######
+
+# ISP-1 interface
+int g0/0	
+ip dhcp client route track 3
+ip nat outside
+exit
+
+# ISP-2 interface
+int g1/0
+ip nat ouside
+exit
+
+#Create default route with AD of 10
+ip route 0.0.0.0 0.0.0.0 gig 0/0 dhcp 10
+
+#Create tracking object
+ip sla 1
+icmp-echo 8.8.8.8 source-interface g0/0
+frequency 10
+exit
+
+#schedule it
+ip sla 1 schedule start-time now life forever
+
+#Track the object
+track 1 ip sla 1 reachability
+exit
+
+#Create 2nd  object
+ip sla 2
+icmp-echo 4.2.2.2 source-in g1/0
+frequency 10
+exit
+
+ip sla schedule 2 start-time now life forever
+track 2 ip sla 2 reachability
+exit
+##VERIFY BOTH OBJECTS ARE BEING TRACKED
+do show track brief
+
+#Track 3rd object as a percentage of object 1&2
+track 3 list threshold percentage
+object 1
+object 2
+exit
+##Verify tracking
+do show track 3
+
+#Config Delay
+track 3
+delay down 15 up 15
+exit
+
+##Create Access-list,Route-MAP and Policy
+ip access-list extended rmap_isp1 #you can name it whatever you want
+permit icmp any host 8.8.8.8
+permin icmp any host 4.2.2.2
+
+route-map isp1 #You can name it whatever
+match ip address rmap_isp1
+set interface gig 0/0
+set ip next-hop dhcp
+exit
+
+##Verify
+do show run | s router-map
+
+ip local policy route-map isp1
+
+
+
+ 

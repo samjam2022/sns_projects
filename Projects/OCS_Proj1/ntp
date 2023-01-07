@@ -1,0 +1,22 @@
+##NTP SETUP in config mode #####
+note: the ip domain-lookup & ip name-server configurations need to be done before configuring NTP
+
+##R1
+clock timizone EST -5              #SET YOUR TIMEZONE I'M EASTERN
+clock summer-time EDT recurring    #ONLY SET if you part of town aknowledges Daylight savings
+ntp server time.nist.gov           #another well known option is pool.ntp.org
+exit
+
+
+##Verify commands
+show clock
+show claendar
+show ntp associations
+show ntp status # make sure its not stratum 16 because that means it is unreliable
+
+
+##SW1
+clock timezone EST -5
+clock summer-time EDT recurring
+ntp server	10.1.1.1
+
