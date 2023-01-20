@@ -1,0 +1,40 @@
+##This is to Set up NAT in our Dual WAN setup
+
+#Define inside and outside interfaces
+int f0/0
+ip nat outside
+exit
+
+int f0/1
+ip nat ouside
+exit
+
+int f2/0.2 [do this for all sub-interfaces]
+ip nat inside
+exit
+
+#Create Extended ACL for our LAN IPs
+ip access-list extended NAT
+permit ip 10.1.0.0 0.0.255.255 any
+exit
+
+#Create route maps for both outside interfaces
+route-map wan1
+match ip add NAT
+match interface fa0/0
+exit
+
+route-map wan2
+match ip add NAT
+match intface f0/1
+exit
+
+ip nat inside source route-map wan1 int f0/0 overload
+ip nat inside source route-map wan2 int f0/1 overload
+
+***Verification***
+show ip nat trans
+show ip nat stat
+
+============================================================
+#Thats it! Obviously make sure that your LAN(inside) interface has an IP address

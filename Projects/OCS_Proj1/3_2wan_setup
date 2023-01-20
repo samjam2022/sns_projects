@@ -1,0 +1,68 @@
+##Dual WAN setup from 2 ISPs
+
+#Make sure you follow these steps in order
+
+#On WAN1 interface
+ip dhcp client route track 3 
+ip add dhcp
+exit
+
+#Set static route for DHCP
+ip route 0.0.0.0 0.0.0.0 fast 0/0 dhcp 1 
+
+#Create tracking Objects with SLA
+ip sla 1
+icmp-echo 8.8.8.8 source-interface fast 0/0
+frequency 10
+exit
+ip sla schedule 1 start-time now life forever
+
+ip sla 2
+icmp-echo 1.1.1.1 source-interface fast 0/0
+frequency 15
+exit
+ip sla schedule 2  start-time life forever
+
+#Now create tracking for objects created
+track 1 rtr 1 reachability ('NOTE: if using newer IOS, "rtr" will be replaced with "ip sla"')
+exit
+track 2 rtr 2 reahability
+exit
+track 3 list threashold percentage
+object 1
+object 2
+delay down 20 up 20
+exit
+
+
+***VERIFY COMMANDS****
+show track br
+show track
+==============================================================================
+#Create exteded ACL
+ip access-list extended rmap1
+permit icmp any host 8.8.8.8
+permit icp any host 1.1.1.1
+
+#Create route map
+route-map isp1 permit 10
+match ip add rmap1
+set int f0/0 
+set ip next-hop dynamic dhcp
+exit
+
+#Apply it to the control plan
+ip local policy route-map isp1
+
+*****VERIFY COMMANDS****
+SHOW RUN | S route
+show ip access-list
+show run | s policy
+
+================================================================================
+#Now setup WAN2
+ip add dhcp
+
+[DUAL ISP Failover is now configure!!]
+
+
